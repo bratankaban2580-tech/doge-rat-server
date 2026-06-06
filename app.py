@@ -8,7 +8,7 @@ from telegram.ext import Updater, CommandHandler
 
 app = Flask(__name__)
 
-BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+BOT_TOKEN = os.environ.get('7798641801:AAHZWpVGv2YicowZaigNS9Q7jIHu9S3Jxaw')
 CHAT_ID = '7803661441'
 
 print("🔍 Старт приложения...")
