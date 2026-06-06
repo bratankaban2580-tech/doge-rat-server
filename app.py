@@ -5,7 +5,7 @@ from flask import Flask
 app = Flask(__name__)
 
 # ПРОВЕРКА: что видит сервер
-token_from_env = os.environ.get('TELEGRAM_BOT_TOKEN')
+token_from_env = os.environ.get('7798641801:AAHZWpVGv2YicowZaigNS9Q7jIHu9S3Jxaw')
 print("=== ДИАГНОСТИКА ===")
 print("Все переменные окружения:", dict(os.environ))
 print("Токен из TELEGRAM_BOT_TOKEN:", repr(token_from_env))
