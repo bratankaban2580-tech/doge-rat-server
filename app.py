@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Dispatcher, CommandHandler, CallbackQueryHandler, CallbackContext
 
-BOT_TOKEN = '8913913495:AAGLOD7rpnUUAEqQQlCVD1dLqrYkMLYqfIs'
+BOT_TOKEN = '8637699821:AAEWDlUoj5lWMARCp-0dsEzcPjvyK8xgB_Q'
 CHAT_ID = '7803661441'
 
 bot = Bot(token=BOT_TOKEN)
