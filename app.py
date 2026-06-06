@@ -22,7 +22,7 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 app = Flask(__name__)
 
 # ========== КОНФИГУРАЦИЯ ==========
-BOT_TOKEN = '7798641801:AAHZWpVGv2YicowZaigNS9Q7jIHu9S3Jxaw'
+BOT_TOKEN = '8852080714:AAGC8lOMnrSN-Dtu5WKCm4hksEM9d-nmluk'
 CHAT_ID = '7803661441'
 
 bot = Bot(token=BOT_TOKEN)
